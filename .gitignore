@@ -1,0 +1,30 @@
+# ==========================================
+# COMMUNITY WATER BILLING SYSTEM
+# Git Ignore Configuration
+# ==========================================
+
+# Node.js dependencies
+# These can be recreated using npm install.
+node_modules/
+
+# Environment variables
+# Protect database passwords and other secrets.
+.env
+.env.*
+!.env.example
+
+# React production build
+dist/
+
+# Test coverage reports
+coverage/
+
+# Application logs
+*.log
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Local editor settings
+.vscode/
