@@ -1,0 +1,446 @@
+-- ==================================================
+-- COMMUNITY WATER BILLING SYSTEM
+-- DATABASE SCHEMA
+-- ==================================================
+
+-- TABLE 1: CUSTOMERS
+--
+-- Purpose:
+-- Stores customer information.
+--
+-- Each customer receives a unique customer ID.
+-- A customer may eventually have multiple water meters.
+--
+-- ==================================================
+
+CREATE TABLE IF NOT EXISTS customers (
+
+    -- Unique customer identification number.
+    -- AUTO_INCREMENT generates the next ID automatically.
+    customer_id INT AUTO_INCREMENT PRIMARY KEY,
+
+    -- Customer's first name (required).
+    first_name VARCHAR(50) NOT NULL,
+
+    -- Customer's surname (required).
+    last_name VARCHAR(50) NOT NULL,
+
+    -- Customer's address (required).
+    address VARCHAR(255) NOT NULL,
+
+    -- Optional telephone number.
+    phone VARCHAR(20),
+
+    -- Optional email address.
+    email VARCHAR(100),
+
+    -- Automatically records when the customer was added.
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+);
+
+-- ==================================================
+-- TABLE 2: METERS
+-- COMMUNITY WATER BILLING SYSTEM
+-- ==================================================
+--
+-- Purpose:
+-- Stores registered water meters.
+--
+-- BUSINESS RULES:
+-- 1. Each meter has a unique 8-digit serial number.
+-- 2. Leading zeros must be preserved.
+-- 3. Each meter is assigned to one customer.
+-- 4. One customer may have multiple meters.
+-- ==================================================
+
+CREATE TABLE IF NOT EXISTS meters (
+
+    -- Physical meter serial number.
+    -- Exactly 8 digits, including possible leading zeros.
+    -- This is our PRIMARY KEY.
+    meter_serial CHAR(8) PRIMARY KEY,
+
+    -- Customer assigned to this meter.
+    -- References the customers table.
+    customer_id INT NOT NULL,
+
+    -- Location where the meter is installed.
+    location VARCHAR(255) NOT NULL,
+
+    -- Current meter status.
+    -- Defaults to ACTIVE.
+    status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
+
+    -- Date the meter was installed.
+    installed_at DATE,
+
+    -- Automatically records registration date and time.
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    -- Validate the meter serial number.
+    -- Must contain exactly 8 numeric digits.
+    CONSTRAINT chk_meter_serial
+        CHECK (meter_serial REGEXP '^[0-9]{8}$'),
+
+    -- Restrict meter status to valid values.
+    CONSTRAINT chk_meter_status
+        CHECK (status IN ('ACTIVE', 'INACTIVE')),
+
+    -- ==================================================
+    -- FOREIGN KEY RELATIONSHIP
+    -- ==================================================
+    -- Connects each meter to an existing customer.
+    -- Prevents deleting a customer who still has meters.
+    -- ==================================================
+
+    CONSTRAINT fk_meters_customer
+        FOREIGN KEY (customer_id)
+        REFERENCES customers(customer_id)
+        ON DELETE RESTRICT
+        ON UPDATE RESTRICT
+
+);
+
+-- ==================================================
+-- TABLE 3: METER READINGS
+-- COMMUNITY WATER BILLING SYSTEM
+-- ==================================================
+--
+-- Purpose:
+-- Stores installation and monthly closing readings
+-- for each registered water meter.
+--
+-- BUSINESS RULES:
+-- 1. Each reading belongs to one registered meter.
+-- 2. Each meter can have only one INITIAL reading.
+-- 3. Each meter can have one MONTHLY reading
+--    per billing month.
+-- 4. INITIAL and MONTHLY readings may share a month.
+-- 5. Readings are whole cubic metres (m3).
+-- 6. Readings cannot be negative.
+-- 7. A new reading must be >= the previous reading.
+-- 8. Replacement meters have independent histories.
+--
+-- NOTE:
+-- Rule 7 and reading-date sequencing will be
+-- enforced by the backend using transactions.
+-- ==================================================
+
+CREATE TABLE IF NOT EXISTS meter_readings (
+
+    -- Unique identifier for each reading.
+    reading_id INT AUTO_INCREMENT PRIMARY KEY,
+
+    -- Physical meter serial number.
+    meter_serial CHAR(8) NOT NULL,
+
+    -- Official billing month.
+    -- Example: 2026-10-01 represents October 2026.
+    billing_month DATE NOT NULL,
+
+    -- Actual date the meter was read.
+    reading_date DATE NOT NULL,
+
+    -- Identifies the type of reading.
+    -- INITIAL = reading taken at meter installation.
+    -- MONTHLY = official monthly closing reading.
+    reading_type VARCHAR(10)
+        NOT NULL DEFAULT 'MONTHLY',
+
+    -- Cumulative reading in whole cubic metres.
+    -- UNSIGNED prevents negative numbers.
+    reading_value INT UNSIGNED NOT NULL,
+
+    -- Automatically records entry date and time.
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    -- ==================================================
+    -- UNIQUE MONTHLY READING RULE
+    -- ==================================================
+    -- Allows one INITIAL and one MONTHLY reading
+    -- for the same meter and billing month.
+    --
+    -- Prevents duplicate MONTHLY readings.
+    -- ==================================================
+
+    CONSTRAINT uq_meter_month_type
+        UNIQUE (meter_serial, billing_month, reading_type),
+
+    -- ==================================================
+    -- ONE INITIAL READING PER PHYSICAL METER
+    -- ==================================================
+    -- For INITIAL readings, this generated column
+    -- contains the meter's serial number.
+    --
+    -- For MONTHLY readings, it contains NULL.
+    --
+    -- MySQL permits multiple NULL values in a
+    -- UNIQUE index, so monthly readings are unaffected.
+    -- However, the same meter cannot have two
+    -- INITIAL readings, even in different months.
+    -- ==================================================
+
+    initial_meter_serial CHAR(8)
+        GENERATED ALWAYS AS (
+            CASE
+                WHEN reading_type = 'INITIAL'
+                THEN meter_serial
+                ELSE NULL
+            END
+        ) STORED,
+
+    CONSTRAINT uq_initial_meter
+        UNIQUE (initial_meter_serial),
+
+    -- Only two official reading types are permitted.
+    CONSTRAINT chk_reading_type
+        CHECK (reading_type IN ('INITIAL', 'MONTHLY')),
+
+    -- Billing month must be the first day
+    -- of its calendar month.
+    CONSTRAINT chk_billing_month
+        CHECK (DAYOFMONTH(billing_month) = 1),
+
+    -- Connects readings to registered meters.
+    -- Prevents accidental deletion of reading history.
+    CONSTRAINT fk_readings_meter
+        FOREIGN KEY (meter_serial)
+        REFERENCES meters(meter_serial)
+        ON DELETE RESTRICT
+        ON UPDATE RESTRICT
+
+);
+
+-- ==================================================
+-- TABLE 4: BILLS
+-- COMMUNITY WATER BILLING SYSTEM
+-- ==================================================
+--
+-- Purpose:
+-- Stores invoices issued for monthly water consumption.
+--
+-- BUSINESS RULES:
+-- 1. Every invoice has a unique, manually entered number.
+-- 2. Invoice numbers contain numeric digits only.
+-- 3. Each invoice belongs to one MONTHLY meter reading.
+-- 4. Each monthly reading can have only one invoice.
+-- 5. Consumption = current reading - previous reading.
+-- 6. Invoice amount = consumption x rate per m3.
+-- 7. Payment is due 30 calendar days after invoice date.
+-- 8. No late-payment penalty is currently charged.
+-- 9. One invoice may receive multiple payments.
+-- 10. Payment status is UNPAID, PARTIAL or PAID.
+--
+-- NOTE:
+-- Payments will be stored separately in TABLE 5.
+-- The backend will validate billing calculations
+-- and ensure invoices reference MONTHLY readings.
+-- ==================================================
+
+CREATE TABLE IF NOT EXISTS bills (
+
+    -- ==================================================
+    -- INVOICE IDENTIFICATION
+    -- ==================================================
+
+    -- Invoice number printed in the physical invoice book.
+    -- Entered manually by staff.
+    -- VARCHAR preserves leading zeros.
+    invoice_number VARCHAR(30) PRIMARY KEY,
+
+    -- Connects this invoice to one meter reading.
+    -- The backend will ensure it is a MONTHLY reading.
+    reading_id INT NOT NULL,
+
+    -- ==================================================
+    -- WATER CONSUMPTION
+    -- ==================================================
+
+    -- Previous month's closing reading.
+    -- For the first bill, use the INITIAL reading.
+    previous_reading INT UNSIGNED NOT NULL,
+
+    -- Current month's closing reading.
+    current_reading INT UNSIGNED NOT NULL,
+
+    -- Consumption is calculated automatically.
+    -- Example: 60 - 25 = 35 cubic metres.
+    consumption_m3 INT UNSIGNED
+        GENERATED ALWAYS AS (
+            current_reading - previous_reading
+        ) STORED,
+
+    -- ==================================================
+    -- BILLING CALCULATION
+    -- ==================================================
+
+    -- Water rate charged per cubic metre.
+    -- DECIMAL ensures accurate financial calculations.
+    -- The rate is stored with each invoice so that
+    -- historical invoices retain their original rates.
+    rate_per_m3 DECIMAL(10,2) NOT NULL,
+
+    -- Calculate the invoice amount automatically.
+    -- Formula: Consumption x Rate per cubic metre.
+    -- Example: (60 - 25) x 0.50 = 17.50
+    total_amount DECIMAL(12,2)
+        GENERATED ALWAYS AS (
+            (current_reading - previous_reading) * rate_per_m3
+        ) STORED,
+
+    -- ==================================================
+    -- INVOICE AND PAYMENT DATES
+    -- ==================================================
+
+    -- Date the invoice is issued and sent.
+    invoice_date DATE NOT NULL,
+
+    -- Payment deadline is 30 calendar days
+    -- after the invoice date.
+    payment_due_date DATE
+        GENERATED ALWAYS AS (
+            DATE_ADD(invoice_date, INTERVAL 30 DAY)
+        ) STORED,
+
+    -- ==================================================
+    -- PAYMENT STATUS
+    -- ==================================================
+
+    -- UNPAID: No payments received.
+    -- PARTIAL: Some payment received.
+    -- PAID: Invoice paid in full.
+    status VARCHAR(10) NOT NULL DEFAULT 'UNPAID',
+
+    -- Automatically records when the invoice
+    -- was entered into the database.
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    -- ==================================================
+    -- DATABASE VALIDATION RULES
+    -- ==================================================
+
+    -- Invoice numbers must contain digits only.
+    -- Examples: 1, 25, 00125, 123456.
+    CONSTRAINT chk_invoice_number
+        CHECK (invoice_number REGEXP '^[0-9]+$'),
+
+    -- Prevents two invoices being issued
+    -- for the same monthly meter reading.
+    CONSTRAINT uq_bill_reading
+        UNIQUE (reading_id),
+
+    -- Closing reading cannot be less than opening reading.
+    CONSTRAINT chk_bill_readings
+        CHECK (current_reading >= previous_reading),
+
+    -- Water rates cannot be negative.
+    CONSTRAINT chk_bill_rate
+        CHECK (rate_per_m3 >= 0),
+
+    -- Restricts payment status to valid values.
+    CONSTRAINT chk_bill_status
+        CHECK (status IN ('UNPAID', 'PARTIAL', 'PAID')),
+
+    -- ==================================================
+    -- FOREIGN KEY RELATIONSHIP
+    -- ==================================================
+
+    -- Each invoice must reference an existing
+    -- meter reading.
+    --
+    -- RESTRICT prevents deleting a reading
+    -- if an invoice already references it.
+    CONSTRAINT fk_bills_reading
+        FOREIGN KEY (reading_id)
+        REFERENCES meter_readings(reading_id)
+        ON DELETE RESTRICT
+        ON UPDATE RESTRICT
+
+);
+
+-- ==================================================
+-- TABLE 5: PAYMENTS
+-- COMMUNITY WATER BILLING SYSTEM
+-- ==================================================
+--
+-- Purpose:
+-- Records cash payments received against invoices.
+--
+-- BUSINESS RULES:
+-- 1. Each payment has a unique receipt number.
+-- 2. Receipt numbers are entered manually by staff.
+-- 3. Receipt numbers contain numeric digits only.
+-- 4. Leading zeros in receipt numbers are preserved.
+-- 5. One invoice may have multiple payments.
+-- 6. Each payment must reference an existing invoice.
+-- 7. Payment amounts must be greater than zero.
+-- 8. Only CASH payments are currently accepted.
+-- 9. The backend prevents invoice overpayments.
+-- 10. Outstanding balances are calculated from
+--     invoice amounts minus recorded payments.
+--
+-- ==================================================
+
+CREATE TABLE IF NOT EXISTS payments (
+
+    -- ==================================================
+    -- RECEIPT IDENTIFICATION
+    -- ==================================================
+
+    -- Receipt number printed in the physical receipt book.
+    -- Entered manually by staff.
+    -- VARCHAR preserves leading zeros.
+    receipt_number VARCHAR(30) PRIMARY KEY,
+
+    -- ==================================================
+    -- INVOICE REFERENCE
+    -- ==================================================
+
+    -- Identifies the invoice receiving this payment.
+    -- Multiple payments may reference the same invoice.
+    invoice_number VARCHAR(30) NOT NULL,
+
+    -- ==================================================
+    -- PAYMENT DETAILS
+    -- ==================================================
+
+    -- Date the cash payment was received.
+    payment_date DATE NOT NULL,
+
+    -- Amount of cash received.
+    -- DECIMAL ensures accurate financial calculations.
+    amount_paid DECIMAL(12,2) NOT NULL,
+
+    -- ==================================================
+    -- AUDIT INFORMATION
+    -- ==================================================
+
+    -- Automatically records when the payment was entered.
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    -- ==================================================
+    -- DATA VALIDATION
+    -- ==================================================
+
+    -- Receipt numbers must contain digits only.
+    CONSTRAINT chk_receipt_number
+        CHECK (receipt_number REGEXP '^[0-9]+$'),
+
+    -- Payment amounts must be positive.
+    CONSTRAINT chk_payment_amount
+        CHECK (amount_paid > 0),
+
+    -- ==================================================
+    -- FOREIGN KEY RELATIONSHIP
+    -- ==================================================
+
+    -- Every payment must belong to an existing invoice.
+    -- Prevents deleting an invoice with payment records.
+    CONSTRAINT fk_payments_bill
+        FOREIGN KEY (invoice_number)
+        REFERENCES bills(invoice_number)
+        ON DELETE RESTRICT
+        ON UPDATE RESTRICT
+
+);
