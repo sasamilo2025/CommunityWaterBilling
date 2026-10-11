@@ -474,3 +474,73 @@ CREATE TABLE IF NOT EXISTS payments (
         ON UPDATE RESTRICT
 
 );
+
+    -- ==================================================
+    -- TABLE 6: USERS
+    -- COMMUNITY WATER BILLING SYSTEM
+    -- ==================================================
+    --
+    -- Purpose:
+    -- Stores application login accounts.
+    --
+    -- Supported roles:
+    -- ADMIN, MANAGER and CUSTOMER.
+    --
+    -- SECURITY:
+    -- Passwords must be securely hashed by the backend.
+    -- Never store plaintext passwords or PINs.
+    --
+    -- BUSINESS RULES:
+    -- 1. Every user has a unique username.
+    -- 2. Every user belongs to one application role.
+    -- 3. CUSTOMER accounts must reference a customer.
+    -- 4. ADMIN and MANAGER accounts must not reference
+    --    a customer record.
+    -- 5. Each customer may have only one login account.
+    --
+    -- ==================================================
+
+CREATE TABLE IF NOT EXISTS users (
+
+    -- Unique internal identifier for each login account.
+    user_id INT AUTO_INCREMENT PRIMARY KEY,
+
+    -- Unique username used during login.
+    -- Customer usernames use their community number.
+    username VARCHAR(100) NOT NULL UNIQUE,
+
+    -- Stores a securely generated password hash.
+    -- Password hashing will be implemented in Node.js.
+    password_hash VARCHAR(255) NOT NULL,
+
+    -- Determines the user's application permissions.
+    role ENUM('ADMIN', 'MANAGER', 'CUSTOMER') NOT NULL,
+
+    -- Links customer accounts to customer records.
+    -- NULL for ADMIN and MANAGER accounts.
+    customer_id INT NULL UNIQUE,
+
+    -- Allows administrators to disable accounts.
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+
+    -- Automatically records account creation.
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    -- Records the last successful login.
+    last_login_at TIMESTAMP NULL DEFAULT NULL,
+
+    -- Establishes the relationship with customers.
+    CONSTRAINT fk_users_customer
+        FOREIGN KEY (customer_id)
+        REFERENCES customers(customer_id),
+
+    -- CUSTOMER accounts must reference a customer.
+    -- ADMIN and MANAGER accounts must not.
+    CONSTRAINT chk_users_role_customer
+        CHECK (
+            (role = 'CUSTOMER' AND customer_id IS NOT NULL)
+            OR
+            (role IN ('ADMIN', 'MANAGER') AND customer_id IS NULL)
+        )
+
+);
