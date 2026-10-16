@@ -39,6 +39,29 @@ import CustomerForm from "./components/CustomerForm";
 // Display customer records retrieved from our Express API.
 import CustomerList from "./components/CustomerList";
 
+// --------------------------------------------------
+// ROLE-BASED DASHBOARD NAVIGATION
+// --------------------------------------------------
+// Displays different navigation menus for:
+// ADMIN, MANAGER and CUSTOMER.
+//
+// Menu selection will be controlled by App.jsx.
+// --------------------------------------------------
+
+import DashboardSidebar from "./components/DashboardSidebar";
+
+// Reusable welcome panel for all three dashboard roles.
+import DashboardHome from "./components/DashboardHome";
+
+// --------------------------------------------------
+// FEATURE PLACEHOLDER
+// --------------------------------------------------
+// Displays an informative message when the selected
+// dashboard module is not yet implemented.
+// --------------------------------------------------
+
+import FeaturePlaceholder from "./components/FeaturePlaceholder";
+
 // Application styling.
 import "./App.css";
 
@@ -67,6 +90,16 @@ function App() {
     const [token, setToken] = useState(null);
 
     // --------------------------------------------------
+    // DASHBOARD NAVIGATION STATE
+    // --------------------------------------------------
+    // Tracks the menu currently selected by the user.
+    //
+    // The dashboard is the default landing page.
+    // --------------------------------------------------
+
+    const [activeMenu, setActiveMenu] = useState("dashboard");
+
+    // --------------------------------------------------
     // HANDLE SUCCESSFUL LOGIN
     // --------------------------------------------------
     // Receive the authenticated user and JWT from
@@ -76,9 +109,14 @@ function App() {
     // --------------------------------------------------
 
     function handleLoginSuccess(loginData) {
-        setToken(loginData.token);
-        setUser(loginData.user);
-    }
+
+    // Store the authenticated session.
+    setToken(loginData.token);
+    setUser(loginData.user);
+
+    // Always begin at the dashboard after login.
+    setActiveMenu("dashboard");
+}
 
     // --------------------------------------------------
     // HANDLE LOGOUT
@@ -87,9 +125,14 @@ function App() {
     // --------------------------------------------------
 
     function handleLogout() {
-        setUser(null);
-        setToken(null);
-    }
+
+    // Clear authentication information.
+    setUser(null);
+    setToken(null);
+
+    // Reset navigation for the next login.
+    setActiveMenu("dashboard");
+}
 
     // --------------------------------------------------
     // VERIFY AUTHENTICATION TOKEN
@@ -144,6 +187,18 @@ function App() {
     return (
         <main className="container mt-5">
 
+    {/* ----------------------------------------------
+    ROLE-BASED DASHBOARD SIDEBAR
+    ----------------------------------------------
+    Display the correct navigation menu based
+    on the authenticated user's role.
+---------------------------------------------- */}
+
+<DashboardSidebar
+    role={user.role}
+    activeMenu={activeMenu}
+    onMenuChange={setActiveMenu}
+/>
             <h1>💧 Community Water Billing System</h1>
 
             <h2>Welcome, {user.username}!</h2>
@@ -173,6 +228,44 @@ function App() {
                 Logout
             </button>
 
+            {/* ==============================================
+            DASHBOARD HOME — ALL THREE ROLES
+            ==============================================
+
+            PURPOSE:
+            Display the appropriate dashboard welcome
+            panel when the Dashboard menu is selected.
+
+            DashboardHome reads the authenticated user's
+            role and displays the correct information.
+
+            This does not interfere with customer CRUD.
+        ============================================== */}
+
+        {activeMenu === "dashboard" && (
+            <DashboardHome user={user} />
+        )}
+
+        {/* ==============================================
+            UNFINISHED DASHBOARD MODULES
+            ==============================================
+
+            Display a placeholder when the selected menu
+            does not yet have a working application module.
+
+            EXCEPTIONS:
+            - Dashboard uses DashboardHome.
+            - ADMIN Customers uses CustomerForm and
+            CustomerList.
+
+            All other menus currently use the placeholder.
+        ============================================== */}
+
+        {activeMenu !== "dashboard" &&
+            !(user.role === "ADMIN" && activeMenu === "customers") && (
+                <FeaturePlaceholder activeMenu={activeMenu} />
+            )}
+
         {/* ----------------------------------------------
         ADMIN CUSTOMER MANAGEMENT
         ----------------------------------------------
@@ -183,7 +276,15 @@ function App() {
         Express independently verifies authorization.
     ---------------------------------------------- */}
 
-    {user.role === "ADMIN" && (
+    {/* ----------------------------------------------
+    ADMIN CUSTOMER CREATION
+    ----------------------------------------------
+    Show the customer entry form only when:
+    1. The authenticated user is ADMIN.
+    2. The Customers menu is selected.
+    ---------------------------------------------- */}
+
+    {user.role === "ADMIN" && activeMenu === "customers" && (
         <CustomerForm token={token} />
     )}
 
@@ -192,7 +293,16 @@ function App() {
         Display customer records for ADMIN users.
     ========================================== */}
 
-    {user.role === "ADMIN" && (
+    {/* ----------------------------------------------
+    ADMIN CUSTOMER RECORDS
+    ----------------------------------------------
+    Display customer records only when ADMIN
+    selects the Customers navigation menu.
+
+    Existing CRUD functionality is preserved.
+    ---------------------------------------------- */}
+
+    {user.role === "ADMIN" && activeMenu === "customers" && (
         <CustomerList token={token} />
     )}
 
