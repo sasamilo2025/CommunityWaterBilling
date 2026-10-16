@@ -12,6 +12,19 @@
 const express = require("express");
 
 // --------------------------------------------------
+// IMPORT CORS MIDDLEWARE
+// --------------------------------------------------
+// CORS (Cross-Origin Resource Sharing) allows
+// our React frontend to communicate with our
+// Express backend from a different origin.
+//
+// React:   http://localhost:5173
+// Express: http://localhost:3000
+// --------------------------------------------------
+
+const cors = require("cors");
+
+// --------------------------------------------------
 // IMPORT MYSQL DATABASE CONNECTION
 // --------------------------------------------------
 // db.js exports our MySQL connection pool.
@@ -20,10 +33,47 @@ const express = require("express");
 const pool = require("./db");
 
 // --------------------------------------------------
+// IMPORT AUTHENTICATION ROUTES
+// --------------------------------------------------
+// authRoutes.js contains our authentication endpoints.
+//
+// We will register these routes under /api/auth.
+
+const authRoutes = require("./routes/authRoutes");
+
+// --------------------------------------------------
+// IMPORT CUSTOMER MANAGEMENT ROUTES
+// --------------------------------------------------
+// customersRoutes.js contains our protected
+// Customer CRUD API endpoints.
+//
+// These routes will be registered under
+// /api/customers.
+// --------------------------------------------------
+
+const customersRoutes = require("./routes/customersRoutes");
+
+// --------------------------------------------------
 // STEP 2: CREATE THE EXPRESS APPLICATION
 // --------------------------------------------------
 
 const app = express();
+
+// --------------------------------------------------
+// ENABLE CORS FOR REACT FRONTEND
+// --------------------------------------------------
+// Allow browser requests originating from our
+// React development server.
+//
+// This middleware must run before our API routes
+// so that CORS headers are included in responses.
+// --------------------------------------------------
+
+app.use(
+    cors({
+        origin: "http://localhost:5173"
+    })
+);
 
 // --------------------------------------------------
 // STEP 3: CONFIGURE THE SERVER PORT
@@ -44,6 +94,33 @@ const PORT = 3000;
 // - Cash payment recording
 
 app.use(express.json());
+
+// --------------------------------------------------
+// REGISTER AUTHENTICATION ROUTES
+// --------------------------------------------------
+// All routes defined in authRoutes.js will begin
+// with /api/auth.
+//
+// Example:
+// router.get("/test") becomes GET /api/auth/test.
+
+app.use("/api/auth", authRoutes);
+
+// --------------------------------------------------
+// REGISTER CUSTOMER MANAGEMENT ROUTES
+// --------------------------------------------------
+// All endpoints defined in customersRoutes.js
+// will begin with /api/customers.
+//
+// Example:
+// router.get("/") becomes GET /api/customers.
+//
+// SECURITY:
+// Individual customer routes use JWT authentication
+// and role-based authorization middleware.
+// --------------------------------------------------
+
+app.use("/api/customers", customersRoutes);
 
 // --------------------------------------------------
 // STEP 5: CREATE OUR FIRST API ENDPOINT

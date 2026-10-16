@@ -11,7 +11,26 @@
 // This allows us to access database settings
 // without writing passwords directly into our code.
 
-require("dotenv").config();
+// --------------------------------------------------
+// LOAD ENVIRONMENT VARIABLES
+// --------------------------------------------------
+// __dirname identifies the directory containing db.js.
+//
+// This ensures that Node.js loads server/.env
+// regardless of the terminal's working directory.
+//
+// Example:
+// node server/index.js
+// OR
+// cd server && node index.js
+//
+// Both commands will use the same configuration.
+
+const path = require("path");
+
+require("dotenv").config({
+    path: path.join(__dirname, ".env")
+});
 
 // --------------------------------------------------
 // STEP 2: IMPORT MYSQL2
