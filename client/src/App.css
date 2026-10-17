@@ -182,3 +182,50 @@
     border-right-color: var(--border);
   }
 }
+
+/* =====================================================
+   COMMUNITY WATER BILLING SYSTEM
+   RESPONSIVE DASHBOARD LAYOUT
+   ===================================================== */
+
+/* Main dashboard container. */
+.dashboard-layout {
+  width: 100%;
+}
+
+/* Application heading and authenticated user details. */
+.dashboard-header {
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+/* Arrange navigation and content side by side. */
+.dashboard-body {
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+/* Navigation column. */
+.dashboard-navigation {
+  min-width: 0;
+}
+
+/* Selected module column. */
+.dashboard-content {
+  min-width: 0;
+  text-align: center;
+}
+
+/* Improve readability of headings inside dark panels. */
+.dashboard-content .dashboard-panel-title {
+  color: #ffffff;
+}
+
+/* Stack columns on tablets and mobile devices. */
+@media (max-width: 900px) {
+  .dashboard-body {
+    grid-template-columns: 1fr;
+  }
+}

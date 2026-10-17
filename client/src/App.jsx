@@ -39,6 +39,9 @@ import CustomerForm from "./components/CustomerForm";
 // Display customer records retrieved from our Express API.
 import CustomerList from "./components/CustomerList";
 
+// Display registered water meters for ADMIN.
+import MeterList from "./components/MeterList";
+
 // --------------------------------------------------
 // ROLE-BASED DASHBOARD NAVIGATION
 // --------------------------------------------------
@@ -184,127 +187,115 @@ function App() {
     // after connecting Login.jsx to our App state.
     // --------------------------------------------------
 
+    // ==================================================
+    // AUTHENTICATED APPLICATION DASHBOARD
+    // ==================================================
+    // Layout:
+    // 1. Header — title, user details and session buttons.
+    // 2. Navigation — role-based menu.
+    // 3. Content — selected dashboard module.
+    //
+    // Existing authentication and CRUD logic is preserved.
+    // ==================================================
+
     return (
-        <main className="container mt-5">
+        <main className="container-fluid dashboard-layout mt-3">
 
-    {/* ----------------------------------------------
-    ROLE-BASED DASHBOARD SIDEBAR
-    ----------------------------------------------
-    Display the correct navigation menu based
-    on the authenticated user's role.
----------------------------------------------- */}
+            {/* ==========================================
+                DASHBOARD HEADER
+            ========================================== */}
 
-<DashboardSidebar
-    role={user.role}
-    activeMenu={activeMenu}
-    onMenuChange={setActiveMenu}
-/>
-            <h1>💧 Community Water Billing System</h1>
+            <header className="dashboard-header">
 
-            <h2>Welcome, {user.username}!</h2>
+                <h1>💧 Community Water Billing System</h1>
 
-            <p>
-                Your role: <strong>{user.role}</strong>
-            </p>
+                <h2>Welcome, {user.username}!</h2>
 
-        {/* ----------------------------------------------
-            JWT AUTHENTICATION TEST
-            ----------------------------------------------
-            This temporary button verifies that our
-            protected Express endpoint accepts the JWT.
-        ---------------------------------------------- */}
+                <p className="mb-3">
+                    Your role: <strong>{user.role}</strong>
+                </p>
 
-        <button
-            className="btn btn-success me-2"
-            onClick={handleVerifyToken}
-        >
-            🔐 Verify JWT
-        </button>
+                {/* Verify the existing JWT with Express. */}
+                <button
+                    className="btn btn-success me-2"
+                    onClick={handleVerifyToken}
+                >
+                    🔐 Verify JWT
+                </button>
 
-            <button
-                className="btn btn-danger"
-                onClick={handleLogout}
-            >
-                Logout
-            </button>
+                {/* End the current authenticated session. */}
+                <button
+                    className="btn btn-danger"
+                    onClick={handleLogout}
+                >
+                    Logout
+                </button>
 
-            {/* ==============================================
-            DASHBOARD HOME — ALL THREE ROLES
-            ==============================================
+            </header>
 
-            PURPOSE:
-            Display the appropriate dashboard welcome
-            panel when the Dashboard menu is selected.
+            {/* ==========================================
+                RESPONSIVE DASHBOARD BODY
+            ========================================== */}
 
-            DashboardHome reads the authenticated user's
-            role and displays the correct information.
+            <div className="dashboard-body">
 
-            This does not interfere with customer CRUD.
-        ============================================== */}
+                {/* --------------------------------------
+                    ROLE-BASED NAVIGATION
+                -------------------------------------- */}
 
-        {activeMenu === "dashboard" && (
-            <DashboardHome user={user} />
-        )}
+                <nav className="dashboard-navigation">
 
-        {/* ==============================================
-            UNFINISHED DASHBOARD MODULES
-            ==============================================
+                    <DashboardSidebar
+                        role={user.role}
+                        activeMenu={activeMenu}
+                        onMenuChange={setActiveMenu}
+                    />
 
-            Display a placeholder when the selected menu
-            does not yet have a working application module.
+                </nav>
 
-            EXCEPTIONS:
-            - Dashboard uses DashboardHome.
-            - ADMIN Customers uses CustomerForm and
-            CustomerList.
+                {/* --------------------------------------
+                    SELECTED DASHBOARD CONTENT
+                -------------------------------------- */}
 
-            All other menus currently use the placeholder.
-        ============================================== */}
+                <section className="dashboard-content">
 
-        {activeMenu !== "dashboard" &&
-            !(user.role === "ADMIN" && activeMenu === "customers") && (
-                <FeaturePlaceholder activeMenu={activeMenu} />
-            )}
+                    {/* Dashboard home for all three roles. */}
+                    {activeMenu === "dashboard" && (
+                        <DashboardHome user={user} />
+                    )}
 
-        {/* ----------------------------------------------
-        ADMIN CUSTOMER MANAGEMENT
-        ----------------------------------------------
-        Display the customer entry form only when
-        the authenticated user has the ADMIN role.
+                    {/* Placeholder for unfinished modules. */}
+                    {activeMenu !== "dashboard" &&
+                        !(user.role === "ADMIN" && activeMenu === "customers") &&
+                        !(user.role === "ADMIN" && activeMenu === "meters") && (
+                            <FeaturePlaceholder activeMenu={activeMenu} />
+                        )
+                    }
 
-        Pass our existing JWT to CustomerForm.
-        Express independently verifies authorization.
-    ---------------------------------------------- */}
+                    {/* ADMIN: Create customer records. */}
+                    {user.role === "ADMIN" &&
+                        activeMenu === "customers" && (
+                            <CustomerForm token={token} />
+                        )
+                    }
 
-    {/* ----------------------------------------------
-    ADMIN CUSTOMER CREATION
-    ----------------------------------------------
-    Show the customer entry form only when:
-    1. The authenticated user is ADMIN.
-    2. The Customers menu is selected.
-    ---------------------------------------------- */}
+                    {/* ADMIN: View and manage customers. */}
+                    {user.role === "ADMIN" &&
+                        activeMenu === "customers" && (
+                            <CustomerList token={token} />
+                        )
+                    }
 
-    {user.role === "ADMIN" && activeMenu === "customers" && (
-        <CustomerForm token={token} />
-    )}
+                    {/* ADMIN: View registered water meters. */}
+                    {user.role === "ADMIN" &&
+                        activeMenu === "meters" && (
+                            <MeterList token={token} />
+                        )
+                    }
 
-    {/* ==========================================
-        CUSTOMER READ OPERATION
-        Display customer records for ADMIN users.
-    ========================================== */}
+                </section>
 
-    {/* ----------------------------------------------
-    ADMIN CUSTOMER RECORDS
-    ----------------------------------------------
-    Display customer records only when ADMIN
-    selects the Customers navigation menu.
-
-    Existing CRUD functionality is preserved.
-    ---------------------------------------------- */}
-
-    {user.role === "ADMIN" && activeMenu === "customers" && (
-        <CustomerList token={token} />
-    )}
+            </div>
 
         </main>
     );

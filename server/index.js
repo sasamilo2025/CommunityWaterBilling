@@ -54,6 +54,17 @@ const authRoutes = require("./routes/authRoutes");
 const customersRoutes = require("./routes/customersRoutes");
 
 // --------------------------------------------------
+// IMPORT METER MANAGEMENT ROUTES
+// --------------------------------------------------
+// metersRoutes.js contains protected endpoints
+// for retrieving and managing water meters.
+//
+// These routes will be registered under /api/meters.
+// --------------------------------------------------
+
+const metersRoutes = require("./routes/metersRoutes");
+
+// --------------------------------------------------
 // STEP 2: CREATE THE EXPRESS APPLICATION
 // --------------------------------------------------
 
@@ -121,6 +132,19 @@ app.use("/api/auth", authRoutes);
 // --------------------------------------------------
 
 app.use("/api/customers", customersRoutes);
+
+// --------------------------------------------------
+// REGISTER METER MANAGEMENT ROUTES
+// --------------------------------------------------
+// All endpoints defined in metersRoutes.js
+// will begin with /api/meters.
+//
+// SECURITY:
+// Meter routes enforce JWT authentication
+// and role-based authorization.
+// --------------------------------------------------
+
+app.use("/api/meters", metersRoutes);
 
 // --------------------------------------------------
 // STEP 5: CREATE OUR FIRST API ENDPOINT

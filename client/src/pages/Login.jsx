@@ -94,66 +94,109 @@ function Login({ onLoginSuccess }) {
     // LOGIN PAGE INTERFACE
     // --------------------------------------------------
 
-    return (
-        <section className="login-page">
+        return (
+        <section className="login-page container py-5">
 
-            {/* APPLICATION HEADING */}
-            <h1>💧 Community Water Billing System</h1>
+            {/* ==========================================
+                APPLICATION HEADING
+                ========================================== */}
+            <h1 className="text-center mb-3">
+                💧 Community Water Billing System
+            </h1>
 
-            <p>
+            <p className="text-center mb-4">
                 Welcome! Please log in to access your account.
             </p>
 
-            {/* LOGIN FORM */}
-            <form onSubmit={handleLogin}>
+            {/* ==========================================
+                CENTERED LOGIN CARD
+                ==========================================
+                mx-auto centers the card horizontally.
+                maxWidth prevents the form from stretching.
+                Bootstrap card adds a clean presentation.
+            ========================================== */}
+            <div
+                className="card shadow-sm mx-auto"
+                style={{ maxWidth: "480px" }}
+            >
 
-                {/* USERNAME FIELD */}
-                <div className="mb-3">
-                    <label htmlFor="username">
-                        Username
-                    </label>
+                <div className="card-body p-4">
 
-                    <input
-                        type="text"
-                        id="username"
-                        className="form-control"
-                        value={username}
-                        onChange={(event) =>
-                            setUsername(event.target.value)
-                        }
-                        autoComplete="username"
-                        required
-                    />
+                    <h3 className="card-title text-center mb-4">
+                        🔐 Account Login
+                    </h3>
+
+                    {/* ======================================
+                        LOGIN FORM
+                        Existing authentication logic preserved.
+                    ====================================== */}
+                    <form onSubmit={handleLogin}>
+
+                        {/* USERNAME FIELD */}
+                        <div className="mb-3 text-start">
+
+                            <label
+                                htmlFor="username"
+                                className="form-label"
+                            >
+                                Username
+                            </label>
+
+                            <input
+                                type="text"
+                                id="username"
+                                className="form-control"
+                                value={username}
+                                onChange={(event) =>
+                                    setUsername(event.target.value)
+                                }
+                                autoComplete="username"
+                                required
+                            />
+
+                        </div>
+
+                        {/* PASSWORD FIELD */}
+                        <div className="mb-4 text-start">
+
+                            <label
+                                htmlFor="password"
+                                className="form-label"
+                            >
+                                Password
+                            </label>
+
+                            <input
+                                type="password"
+                                id="password"
+                                className="form-control"
+                                value={password}
+                                onChange={(event) =>
+                                    setPassword(event.target.value)
+                                }
+                                autoComplete="current-password"
+                                required
+                            />
+
+                        </div>
+
+                        {/* CENTERED LOGIN BUTTON */}
+                        <div className="text-center">
+
+                            <button
+                                type="submit"
+                                className="btn btn-primary px-5"
+                            >
+                                🔐 Login
+                            </button>
+
+                        </div>
+
+                    </form>
+
                 </div>
 
-                {/* PASSWORD FIELD */}
-                <div className="mb-3">
-                    <label htmlFor="password">
-                        Password
-                    </label>
-
-                    <input
-                        type="password"
-                        id="password"
-                        className="form-control"
-                        value={password}
-                        onChange={(event) =>
-                            setPassword(event.target.value)
-                        }
-                        autoComplete="current-password"
-                        required
-                    />
-                </div>
-
-                {/* LOGIN BUTTON */}
-                <button
-                    type="submit"
-                    className="btn btn-primary"
-                >
-                    🔐 Login
-                </button>
-
-            </form>
+            </div>
 
         </section>
     );
