@@ -58,3 +58,64 @@ export async function getMeters(token) {
     // Return the meter records to our React component.
     return data;
 }
+// ==================================================
+// CREATE NEW METER
+// ==================================================
+//
+// ENDPOINT:
+// POST /api/meters
+//
+// PURPOSE:
+// Register a new water meter against an existing
+// customer in our MySQL database.
+//
+// SECURITY:
+// ADMIN ONLY.
+// Express verifies the JWT and ADMIN role.
+//
+// EXPECTED RESPONSES:
+// 201 - Meter registered successfully.
+// 400 - Invalid meter information.
+// 401 - Authentication required.
+// 403 - Insufficient permissions.
+// 404 - Customer does not exist.
+// 409 - Meter number already exists.
+//
+// ==================================================
+
+export async function createMeter(meterData, token) {
+
+    // Send the new meter information to Express.
+    const response = await fetch(METER_API_URL, {
+
+        // POST creates a new database record.
+        method: "POST",
+
+        headers: {
+
+            // Tell Express that we are sending JSON.
+            "Content-Type": "application/json",
+
+            // Authenticate the ADMIN user.
+            Authorization: `Bearer ${token}`
+        },
+
+        // Convert the meter information into JSON.
+        body: JSON.stringify(meterData)
+    });
+
+    // Convert the Express response into JavaScript data.
+    const data = await response.json();
+
+    // Handle unsuccessful requests.
+    if (!response.ok) {
+
+        // Display the message returned by Express.
+        throw new Error(
+            data.message || "Failed to register meter."
+        );
+    }
+
+    // Return the successful registration response.
+    return data;
+}

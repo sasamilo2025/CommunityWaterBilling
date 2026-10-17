@@ -42,6 +42,15 @@ import CustomerList from "./components/CustomerList";
 // Display registered water meters for ADMIN.
 import MeterList from "./components/MeterList";
 
+// ==================================================
+// ADMIN METER REGISTRATION
+// ==================================================
+// Display the meter registration form.
+// Express independently enforces ADMIN permissions.
+// ==================================================
+
+import MeterForm from "./components/MeterForm";
+
 // --------------------------------------------------
 // ROLE-BASED DASHBOARD NAVIGATION
 // --------------------------------------------------
@@ -101,6 +110,15 @@ function App() {
     // --------------------------------------------------
 
     const [activeMenu, setActiveMenu] = useState("dashboard");
+
+    // ==================================================
+    // METER LIST REFRESH CONTROL
+    // ==================================================
+    // Increment this value after a successful meter
+    // registration to reload the meter list.
+    // ==================================================
+
+    const [meterRefreshKey, setMeterRefreshKey] = useState(0);
 
     // --------------------------------------------------
     // HANDLE SUCCESSFUL LOGIN
@@ -286,10 +304,29 @@ function App() {
                         )
                     }
 
-                    {/* ADMIN: View registered water meters. */}
+                    {/* ==========================================
+                    ADMIN: METER REGISTRATION AND LIST
+                    ========================================== */}
+
                     {user.role === "ADMIN" &&
-                        activeMenu === "meters" && (
-                            <MeterList token={token} />
+                    activeMenu === "meters" && (
+
+                        <>
+                            {/* ADMIN: Register a new water meter. */}
+                            <MeterForm
+                                token={token}
+                                onMeterCreated={() => {
+                                    // Increment the counter after a successful save.
+                                    setMeterRefreshKey((previous) => previous + 1);
+                                }}
+                            />
+
+                            {/* Reload the list whenever a meter is registered. */}
+                            <MeterList
+                                token={token}
+                                key={meterRefreshKey}
+                            />
+                        </>
                         )
                     }
 
