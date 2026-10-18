@@ -68,7 +68,7 @@ router.get(
             // Retrieve meters and associated customers.
             // LEFT JOIN is not necessary because the
             // customer relationship is mandatory.
-            // const [meters] = await pool.execute(
+            const [meters] = await pool.execute(
                 `SELECT
                     m.meter_serial,
                     m.customer_id,

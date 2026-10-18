@@ -64,6 +64,21 @@ const pool = mysql.createPool({
     // Our Community Water Billing database
     database: process.env.DB_NAME,
 
+    // --------------------------------------------------
+    // PRESERVE MYSQL CALENDAR DATES
+    // --------------------------------------------------
+    // Return SQL DATE columns as YYYY-MM-DD strings.
+    //
+    // Prevent timezone conversion from shifting dates
+    // when displaying meter installations, readings,
+    // invoices and payments.
+    //
+    // DATETIME and TIMESTAMP values retain their
+    // normal mysql2 handling.
+    // --------------------------------------------------
+
+    dateStrings: ["DATE"],
+
     // Wait if all connections are currently busy
     waitForConnections: true,
 

@@ -65,6 +65,15 @@ const customersRoutes = require("./routes/customersRoutes");
 const metersRoutes = require("./routes/metersRoutes");
 
 // --------------------------------------------------
+// IMPORT METER READINGS ROUTES
+// --------------------------------------------------
+// Provides protected API endpoints for retrieving
+// and managing monthly water meter readings.
+// --------------------------------------------------
+
+const readingsRoutes = require("./routes/readingsRoutes");
+
+// --------------------------------------------------
 // STEP 2: CREATE THE EXPRESS APPLICATION
 // --------------------------------------------------
 
@@ -145,6 +154,17 @@ app.use("/api/customers", customersRoutes);
 // --------------------------------------------------
 
 app.use("/api/meters", metersRoutes);
+
+// --------------------------------------------------
+// REGISTER METER READINGS ROUTES
+// --------------------------------------------------
+// Connect the readings router to /api/readings.
+//
+// Authentication and authorization are enforced
+// inside readingsRoutes.js.
+// --------------------------------------------------
+
+app.use("/api/readings", readingsRoutes);
 
 // --------------------------------------------------
 // STEP 5: CREATE OUR FIRST API ENDPOINT

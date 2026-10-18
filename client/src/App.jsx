@@ -51,6 +51,13 @@ import MeterList from "./components/MeterList";
 
 import MeterForm from "./components/MeterForm";
 
+// ==================================================
+// METER READINGS COMPONENT
+// ==================================================
+// Display existing meter readings for ADMIN/MANAGER.
+
+import ReadingList from "./components/ReadingList";
+
 // --------------------------------------------------
 // ROLE-BASED DASHBOARD NAVIGATION
 // --------------------------------------------------
@@ -183,6 +190,159 @@ function App() {
             alert(`JWT verification failed: ${error.message}`);
         }
     }
+    // ==================================================
+    // TEMPORARY TEST: AUTHENTICATED METER READINGS
+    // ==================================================
+    //
+    // PURPOSE:
+    // Verify that our React JWT can successfully
+    // retrieve meter readings from Express.
+    //
+    // This function does not modify database records.
+    // ==================================================
+
+    async function handleTestReadings() {
+
+        try {
+
+            // Send our React authentication token to Express.
+            const response = await fetch(
+                "http://localhost:3000/api/readings",
+                {
+                    method: "GET",
+
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                }
+            );
+
+            // Convert the server response to JSON.
+            const data = await response.json();
+
+            // Display the HTTP response status.
+            console.log("Readings HTTP Status:", response.status);
+
+            // Handle unsuccessful requests.
+            if (!response.ok) {
+                alert(`Readings API failed: ${data.message}`);
+                return;
+            }
+
+            // Display the returned records in Chrome Console.
+            console.table(data.readings);
+
+            // Display a confirmation message.
+            alert(
+                `Meter Readings API Test Successful!\n\n` +
+                `HTTP Status: ${response.status}\n` +
+                `Total Readings: ${data.count}`
+            );
+
+        } catch (error) {
+
+            console.error("Readings test error:", error);
+
+            alert(`Readings API error: ${error.message}`);
+        }
+    }
+
+    // ==================================================
+    // TEMPORARY TEST: INITIAL READING VALIDATION
+    // ==================================================
+    //
+    // PURPOSE:
+    // Verify that the backend rejects an invalid
+    // opening meter reading.
+    //
+    // EXPECTED:
+    // HTTP 400 Bad Request.
+    //
+    // SAFETY:
+    // The submitted reading is negative.
+    // Our backend must reject it before any INSERT.
+    // ==================================================
+
+    async function handleTestInitialValidation() {
+
+        try {
+
+            // Submit an intentionally invalid reading.
+            const response = await fetch(
+                "http://localhost:3000/api/readings/initial",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`
+                    },
+
+                    // ==================================================
+                    // TEST: REGISTER A VALID INITIAL READING
+                    // ==================================================
+                    //
+                    // Meter: 12345678
+                    // Installation date: 2026-10-17
+                    // Opening reading: 100 m³
+                    //
+                    // Expected result:
+                    // HTTP 201 Created.
+                    //
+                    // WARNING:
+                    // This test creates a permanent database record.
+                    // ==================================================
+
+                    body: JSON.stringify({
+                        meter_serial: "12345678",
+                        reading_date: "2026-10-17",
+                        reading_value: 100
+                    })
+                }
+            );
+
+            // Read the server response.
+            const data = await response.json();
+
+            // Display the HTTP result.
+            console.log(
+                "Initial Reading Validation HTTP Status:",
+                response.status
+            );
+
+            console.log(
+                "Validation message:",
+                data.message
+            );
+
+            // Verify the expected rejection.
+            if (response.status === 201) {
+
+                alert(
+                    "Initial Reading Registration PASSED!\n\n" +
+                    "HTTP Status: 201\n" +
+                    "Open meter reading successfully saved."
+                );
+
+            } else {
+
+                alert(
+                    "Unexpected validation result!\n\n" +
+                    `HTTP Status: ${response.status}\n` +
+                    `Message: ${data.message}`
+                );
+            }
+
+        } catch (error) {
+
+            console.error(
+                "Initial reading validation test error:",
+                error
+            );
+
+            alert(error.message);
+        }
+    }
 
     // --------------------------------------------------
     // DISPLAY LOGIN PAGE
@@ -241,7 +401,35 @@ function App() {
                     🔐 Verify JWT
                 </button>
 
-                {/* End the current authenticated session. */}
+            {/* ============================================== */}
+            {/* TEMPORARY METER READINGS API TEST BUTTON       */}
+            {/* ============================================== */}
+
+            {user.role === "ADMIN" && (
+                <button
+                    type="button"
+                    className="btn btn-primary ms-2"
+                    onClick={handleTestReadings}
+                >
+                    📊 Test Readings API
+                </button>
+            )}
+
+            {/* ============================================== */}
+            {/* TEMPORARY INITIAL READING VALIDATION BUTTON    */}
+            {/* ============================================== */}
+
+            {user.role === "ADMIN" && (
+                <button
+                    type="button"
+                    className="btn btn-warning ms-2"
+                    onClick={handleTestInitialValidation}
+                >
+                    🧪 Test Initial Validation
+                </button>
+            )}
+
+            {/* End the current authenticated session. */}
                 <button
                     className="btn btn-danger"
                     onClick={handleLogout}
@@ -282,11 +470,30 @@ function App() {
                         <DashboardHome user={user} />
                     )}
 
-                    {/* Placeholder for unfinished modules. */}
+                    {/* ==================================================
+                        PLACEHOLDERS FOR UNFINISHED MODULES
+                    ================================================== */}
+
                     {activeMenu !== "dashboard" &&
-                        !(user.role === "ADMIN" && activeMenu === "customers") &&
-                        !(user.role === "ADMIN" && activeMenu === "meters") && (
+
+                        // Customer management has been implemented.
+                        !(user.role === "ADMIN" &&
+                        activeMenu === "customers") &&
+
+                        // Meter management has been implemented.
+                        !(user.role === "ADMIN" &&
+                        activeMenu === "meters") &&
+
+                        // Meter readings history is now implemented
+                        // for ADMIN and MANAGER.
+                        !(
+                            (user.role === "ADMIN" ||
+                            user.role === "MANAGER") &&
+                            activeMenu === "readings"
+                        ) && (
+
                             <FeaturePlaceholder activeMenu={activeMenu} />
+
                         )
                     }
 
@@ -327,6 +534,20 @@ function App() {
                                 key={meterRefreshKey}
                             />
                         </>
+                        )
+                    }
+
+                    {/* ==================================================
+                        METER READINGS HISTORY
+                    ================================================== */}
+
+                    {(user.role === "ADMIN" ||
+                    user.role === "MANAGER") &&
+
+                        activeMenu === "readings" && (
+
+                            <ReadingList token={token} />
+
                         )
                     }
 
