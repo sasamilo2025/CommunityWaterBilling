@@ -132,51 +132,70 @@ function Login({ onLoginSuccess }) {
                     ====================================== */}
                     <form onSubmit={handleLogin}>
 
-                        {/* USERNAME FIELD */}
-                        <div className="mb-3 text-start">
+                        {/* ======================================
+                            USERNAME FIELD - HORIZONTAL LAYOUT
+                        ====================================== */}
 
+                        <div className="row align-items-center mb-3">
+
+                            {/* Username label - left side. */}
                             <label
                                 htmlFor="username"
-                                className="form-label"
+                                className="col-sm-3 col-form-label"
                             >
-                                Username
+                                Username:
                             </label>
 
-                            <input
-                                type="text"
-                                id="username"
-                                className="form-control"
-                                value={username}
-                                onChange={(event) =>
-                                    setUsername(event.target.value)
-                                }
-                                autoComplete="username"
-                                required
-                            />
+                            {/* Username input - right side. */}
+                            <div className="col-sm-9">
+
+                                <input
+                                    type="text"
+                                    id="username"
+                                    className="form-control"
+                                    value={username}
+                                    onChange={(event) =>
+                                        setUsername(event.target.value)
+                                    }
+                                    autoComplete="username"
+                                    required
+                                />
+
+                            </div>
 
                         </div>
 
-                        {/* PASSWORD FIELD */}
-                        <div className="mb-4 text-start">
 
+                        {/* ======================================
+                            PASSWORD FIELD - HORIZONTAL LAYOUT
+                        ====================================== */}
+
+                        <div className="row align-items-center mb-4">
+
+                            {/* Password label - left side. */}
                             <label
                                 htmlFor="password"
-                                className="form-label"
+                                className="col-sm-3 col-form-label"
                             >
-                                Password
+                                Password:
                             </label>
 
-                            <input
-                                type="password"
-                                id="password"
-                                className="form-control"
-                                value={password}
-                                onChange={(event) =>
-                                    setPassword(event.target.value)
-                                }
-                                autoComplete="current-password"
-                                required
-                            />
+                            {/* Password input - right side. */}
+                            <div className="col-sm-9">
+
+                                <input
+                                    type="password"
+                                    id="password"
+                                    className="form-control"
+                                    value={password}
+                                    onChange={(event) =>
+                                        setPassword(event.target.value)
+                                    }
+                                    autoComplete="current-password"
+                                    required
+                                />
+
+                            </div>
 
                         </div>
 

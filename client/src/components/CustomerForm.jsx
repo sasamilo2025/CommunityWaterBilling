@@ -143,118 +143,194 @@ const formValid =
 
                 <form onSubmit={handleSubmit}>
 
-                    <div className="row g-3">
+                    {/* ==================================================
+                        CUSTOMER REGISTRATION
+                        TWO-COLUMN HORIZONTAL FORM LAYOUT
+                    ================================================== */}
 
-                                            {/* ======================================
+                    <div className="row g-4">
+
+                        {/* ==============================================
                             LEFT COLUMN
-                            Customer identification information.
-                        ====================================== */}
+                            Customer identification information
+                        ============================================== */}
 
-                        <div className="col-12 col-md-6">
+                        <div className="col-md-6">
 
-                            {/* Customer Number */}
-                            <div className="mb-3">
-                                <label className="form-label">
-                                    Customer Number
+                            {/* CUSTOMER NUMBER */}
+
+                            <div className="row align-items-center mb-3">
+
+                                <label
+                                    htmlFor="customer_no"
+                                    className="col-sm-4 col-form-label"
+                                >
+                                    Customer No:
                                 </label>
 
-                                <input
-                                    className="form-control"
-                                    name="customer_no"
-                                    value={formData.customer_no}
-                                    onChange={handleChange}
-                                    placeholder="ABC99"
-                                    maxLength={5}
-                                    required
-                                />
+                                <div className="col-sm-8">
+
+                                    <input
+                                        id="customer_no"
+                                        className="form-control"
+                                        name="customer_no"
+                                        value={formData.customer_no}
+                                        onChange={handleChange}
+                                        placeholder="ABC99"
+                                        maxLength={5}
+                                        required
+                                    />
+
+                                </div>
+
                             </div>
 
-                            {/* First Name */}
-                            <div className="mb-3">
-                                <label className="form-label">
-                                    First Name
+
+                            {/* FIRST NAME */}
+
+                            <div className="row align-items-center mb-3">
+
+                                <label
+                                    htmlFor="first_name"
+                                    className="col-sm-4 col-form-label"
+                                >
+                                    First Name:
                                 </label>
 
-                                <input
-                                    className="form-control"
-                                    name="first_name"
-                                    value={formData.first_name}
-                                    onChange={handleChange}
-                                    maxLength={50}
-                                    required
-                                />
+                                <div className="col-sm-8">
+
+                                    <input
+                                        id="first_name"
+                                        className="form-control"
+                                        name="first_name"
+                                        value={formData.first_name}
+                                        onChange={handleChange}
+                                        maxLength={50}
+                                        required
+                                    />
+
+                                </div>
+
                             </div>
 
-                            {/* Last Name */}
-                            <div className="mb-3">
-                                <label className="form-label">
-                                    Last Name
+
+                            {/* LAST NAME */}
+
+                            <div className="row align-items-center mb-3">
+
+                                <label
+                                    htmlFor="last_name"
+                                    className="col-sm-4 col-form-label"
+                                >
+                                    Last Name:
                                 </label>
 
-                                <input
-                                    className="form-control"
-                                    name="last_name"
-                                    value={formData.last_name}
-                                    onChange={handleChange}
-                                    maxLength={50}
-                                    required
-                                />
+                                <div className="col-sm-8">
+
+                                    <input
+                                        id="last_name"
+                                        className="form-control"
+                                        name="last_name"
+                                        value={formData.last_name}
+                                        onChange={handleChange}
+                                        maxLength={50}
+                                        required
+                                    />
+
+                                </div>
+
                             </div>
 
                         </div>
 
-                        {/* ======================================
+
+                        {/* ==============================================
                             RIGHT COLUMN
-                            Customer contact information.
-                        ====================================== */}
+                            Customer contact information
+                        ============================================== */}
 
-                        <div className="col-12 col-md-6">
+                        <div className="col-md-6">
 
-                            {/* Address */}
-                            <div className="mb-3">
-                                <label className="form-label">
-                                    Address
+                            {/* ADDRESS */}
+
+                            <div className="row align-items-center mb-3">
+
+                                <label
+                                    htmlFor="address"
+                                    className="col-sm-4 col-form-label"
+                                >
+                                    Address:
                                 </label>
 
-                                <input
-                                    className="form-control"
-                                    name="address"
-                                    value={formData.address}
-                                    onChange={handleChange}
-                                    maxLength={255}
-                                    required
-                                />
+                                <div className="col-sm-8">
+
+                                    <input
+                                        id="address"
+                                        className="form-control"
+                                        name="address"
+                                        value={formData.address}
+                                        onChange={handleChange}
+                                        maxLength={255}
+                                        required
+                                    />
+
+                                </div>
+
                             </div>
 
-                            {/* Phone */}
-                            <div className="mb-3">
-                                <label className="form-label">
-                                    Phone
+
+                            {/* PHONE */}
+
+                            <div className="row align-items-center mb-3">
+
+                                <label
+                                    htmlFor="phone"
+                                    className="col-sm-4 col-form-label"
+                                >
+                                    Phone:
                                 </label>
 
-                                <input
-                                    className="form-control"
-                                    name="phone"
-                                    value={formData.phone}
-                                    onChange={handleChange}
-                                    maxLength={20}
-                                />
+                                <div className="col-sm-8">
+
+                                    <input
+                                        id="phone"
+                                        className="form-control"
+                                        name="phone"
+                                        value={formData.phone}
+                                        onChange={handleChange}
+                                        maxLength={20}
+                                    />
+
+                                </div>
+
                             </div>
 
-                            {/* Email */}
-                            <div className="mb-3">
-                                <label className="form-label">
-                                    Email
+
+                            {/* EMAIL */}
+
+                            <div className="row align-items-center mb-3">
+
+                                <label
+                                    htmlFor="email"
+                                    className="col-sm-4 col-form-label"
+                                >
+                                    Email:
                                 </label>
 
-                                <input
-                                    className="form-control"
-                                    name="email"
-                                    type="email"
-                                    value={formData.email}
-                                    onChange={handleChange}
-                                    maxLength={100}
-                                />
+                                <div className="col-sm-8">
+
+                                    <input
+                                        id="email"
+                                        type="email"
+                                        className="form-control"
+                                        name="email"
+                                        value={formData.email}
+                                        onChange={handleChange}
+                                        maxLength={100}
+                                    />
+
+                                </div>
+
                             </div>
 
                         </div>
@@ -268,6 +344,9 @@ const formValid =
                         Green: Form valid and ready to save.
                         Yellow: Saving in progress.
                     ========================================== */}
+
+                    {/* Center both customer action buttons. */}
+                    <div className="text-center">
 
                     <button
                         type="submit"
@@ -297,10 +376,13 @@ const formValid =
                                 setSaved(false);
                                 setMessage("");
                             }}
-                        >
+                            >
                             ➕ New Customer
                         </button>
                     )}
+
+                    {/* Close the centered buttons container. */}
+                    </div>
 
                 </form>
 

@@ -58,6 +58,18 @@ import MeterForm from "./components/MeterForm";
 
 import ReadingList from "./components/ReadingList";
 
+// ADMIN meter-reading registration form.
+import ReadingForm from "./components/ReadingForm";
+
+// ==================================================
+// CUSTOMER BILLING COMPONENTS
+// ==================================================
+// ADMIN creates invoices.
+// ADMIN and MANAGER can view invoices.
+
+import BillForm from "./components/BillForm";
+import BillList from "./components/BillList";
+
 // --------------------------------------------------
 // ROLE-BASED DASHBOARD NAVIGATION
 // --------------------------------------------------
@@ -126,6 +138,21 @@ function App() {
     // ==================================================
 
     const [meterRefreshKey, setMeterRefreshKey] = useState(0);
+
+    // ==================================================
+    // METER READINGS HISTORY REFRESH CONTROL
+    // ==================================================
+    // Increment this value after successfully saving
+    // a meter reading.
+    //
+    // React will reload ReadingList so the new
+    // reading appears immediately in the table.
+    // ==================================================
+
+    const [readingsRefreshKey, setReadingsRefreshKey] = useState(0);
+
+    // Reload invoice history after an invoice is saved.
+    const [billsRefreshKey, setBillsRefreshKey] = useState(0);
 
     // --------------------------------------------------
     // HANDLE SUCCESSFUL LOGIN
@@ -480,16 +507,18 @@ function App() {
                         !(user.role === "ADMIN" &&
                         activeMenu === "customers") &&
 
-                        // Meter management has been implemented.
-                        !(user.role === "ADMIN" &&
-                        activeMenu === "meters") &&
-
-                        // Meter readings history is now implemented
-                        // for ADMIN and MANAGER.
+                        // Meter Readings is implemented for ADMIN/MANAGER.
                         !(
                             (user.role === "ADMIN" ||
                             user.role === "MANAGER") &&
                             activeMenu === "readings"
+                        ) &&
+
+                        // Bills is implemented for ADMIN/MANAGER.
+                        !(
+                            (user.role === "ADMIN" ||
+                            user.role === "MANAGER") &&
+                            activeMenu === "bills"
                         ) && (
 
                             <FeaturePlaceholder activeMenu={activeMenu} />
@@ -541,16 +570,72 @@ function App() {
                         METER READINGS HISTORY
                     ================================================== */}
 
+                    {/* ==================================================
+                        METER READINGS REGISTRATION AND HISTORY
+                    ================================================== */}
+
                     {(user.role === "ADMIN" ||
                     user.role === "MANAGER") &&
 
                         activeMenu === "readings" && (
 
-                            <ReadingList token={token} />
+                            <div>
+
+                                {/* ADMIN can register readings. */}
+                                {user.role === "ADMIN" && (
+
+                                    <ReadingForm
+                                        token={token}
+                                        onSaved={() => {
+                                            setReadingsRefreshKey(key => key + 1);
+                                        }}
+                                    />
+
+                                )}
+
+                                {/* ADMIN and MANAGER can view history. */}
+                                <ReadingList
+                                    key={readingsRefreshKey}
+                                    token={token}
+                                />
+
+                            </div>
 
                         )
                     }
 
+                {/* ==================================================
+                    BILLS REGISTRATION AND INVOICE HISTORY
+                ================================================== */}
+
+                {(user.role === "ADMIN" ||
+                user.role === "MANAGER") &&
+
+                    activeMenu === "bills" && (
+
+                        <div>
+
+                            {/* ADMIN can generate invoices. */}
+                            {user.role === "ADMIN" && (
+
+                                <BillForm
+                                    token={token}
+                                    onSaved={() => {
+                                        setBillsRefreshKey(key => key + 1);
+                                    }}
+                                />
+
+                            )}
+
+                            {/* ADMIN and MANAGER can view invoices. */}
+                            <BillList
+                                key={billsRefreshKey}
+                                token={token}
+                            />
+
+                        </div>
+                    )
+                }
                 </section>
 
             </div>

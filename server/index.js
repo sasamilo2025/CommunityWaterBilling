@@ -64,6 +64,9 @@ const customersRoutes = require("./routes/customersRoutes");
 
 const metersRoutes = require("./routes/metersRoutes");
 
+// Import protected customer invoice routes.
+const billsRoutes = require("./routes/billsRoutes");
+
 // --------------------------------------------------
 // IMPORT METER READINGS ROUTES
 // --------------------------------------------------
@@ -165,6 +168,9 @@ app.use("/api/meters", metersRoutes);
 // --------------------------------------------------
 
 app.use("/api/readings", readingsRoutes);
+
+// Register customer invoice endpoints.
+app.use("/api/bills", billsRoutes);
 
 // --------------------------------------------------
 // STEP 5: CREATE OUR FIRST API ENDPOINT

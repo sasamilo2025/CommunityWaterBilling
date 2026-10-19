@@ -478,6 +478,446 @@ router.post(
 );
 
 // ==================================================
+// REGISTER MONTHLY METER READING
+// ==================================================
+//
+// ENDPOINT:
+// POST /api/readings/monthly
+//
+// PERMISSIONS:
+// ADMIN only.
+//
+// BUSINESS RULES:
+// 1. Meter must exist.
+// 2. An INITIAL reading must exist.
+// 3. ADMIN must confirm the billing month.
+// 4. Reading dates must follow chronological order.
+// 5. Reading values must not decrease.
+// 6. Only one MONTHLY reading per billing month.
+// 7. Subsequent billing months must be sequential.
+// 8. Save using a database transaction.
+//
+// ==================================================
+
+router.post(
+    "/monthly",
+
+    authenticateToken,
+
+    authorizeRoles("ADMIN"),
+
+    async (req, res) => {
+
+        let connection;
+
+        try {
+
+            // ------------------------------------------
+            // STEP 1: READ REQUEST VALUES
+            // ------------------------------------------
+
+            const {
+                meter_serial,
+                billing_month,
+                reading_date,
+                reading_value,
+                billing_month_confirmed
+            } = req.body || {};
+
+            // ------------------------------------------
+            // STEP 2: VALIDATE METER NUMBER
+            // ------------------------------------------
+
+            if (typeof meter_serial !== "string") {
+                return res.status(400).json({
+                    message: "Meter number is required"
+                });
+            }
+
+            const normalizedSerial =
+                meter_serial.replace("-", "");
+
+            if (!/^[0-9]{8}$/.test(normalizedSerial)) {
+                return res.status(400).json({
+                    message: "Meter number must contain exactly 8 digits"
+                });
+            }
+
+            // ------------------------------------------
+            // STEP 3: VALIDATE CALENDAR DATES
+            // ------------------------------------------
+            //
+            // Verify both date format and actual
+            // calendar validity.
+            //
+            // This rejects dates such as 2026-02-30.
+            // ------------------------------------------
+
+            function validDate(value) {
+
+                if (
+                    typeof value !== "string" ||
+                    !/^\d{4}-\d{2}-\d{2}$/.test(value)
+                ) {
+                    return false;
+                }
+
+                const parsed = new Date(
+                    `${value}T00:00:00Z`
+                );
+
+                return (
+                    !Number.isNaN(parsed.getTime()) &&
+                    parsed.toISOString().slice(0, 10) === value
+                );
+            }
+
+            if (!validDate(reading_date)) {
+                return res.status(400).json({
+                    message: "Invalid physical reading date"
+                });
+            }
+
+            if (
+                !validDate(billing_month) ||
+                !billing_month.endsWith("-01")
+            ) {
+                return res.status(400).json({
+                    message:
+                        "Billing month must be the first day of a valid month"
+                });
+            }
+
+            // ------------------------------------------
+            // STEP 4: REJECT FUTURE PHYSICAL DATES
+            // ------------------------------------------
+            //
+            // Use the server's local calendar date
+            // rather than UTC for this comparison.
+            // ------------------------------------------
+
+            const now = new Date();
+
+            const today = [
+                now.getFullYear(),
+                String(now.getMonth() + 1).padStart(2, "0"),
+                String(now.getDate()).padStart(2, "0")
+            ].join("-");
+
+            if (reading_date > today) {
+                return res.status(400).json({
+                    message:
+                        "Reading date cannot be in the future"
+                });
+            }
+
+            // ------------------------------------------
+            // STEP 5: VALIDATE READING VALUE
+            // ------------------------------------------
+
+            if (
+                typeof reading_value !== "number" ||
+                !Number.isSafeInteger(reading_value) ||
+                reading_value < 0 ||
+                reading_value > 4294967295
+            ) {
+                return res.status(400).json({
+                    message:
+                        "Reading must be a non-negative whole number"
+                });
+            }
+
+            // ------------------------------------------
+            // STEP 6: REQUIRE ADMIN CONFIRMATION
+            // ------------------------------------------
+
+            if (billing_month_confirmed !== true) {
+                return res.status(400).json({
+                    message:
+                        "ADMIN must confirm the billing month"
+                });
+            }
+
+            // ------------------------------------------
+            // STEP 7: BEGIN DATABASE TRANSACTION
+            // ------------------------------------------
+
+            connection = await pool.getConnection();
+
+            await connection.beginTransaction();
+
+            // Lock meter to prevent simultaneous
+            // registrations for the same meter.
+
+            const [meters] = await connection.execute(
+                `SELECT meter_serial, installed_at
+                 FROM meters
+                 WHERE meter_serial = ?
+                 FOR UPDATE`,
+                [normalizedSerial]
+            );
+
+            if (meters.length === 0) {
+
+                await connection.rollback();
+
+                return res.status(404).json({
+                    message: "Selected meter does not exist"
+                });
+            }
+
+            // ------------------------------------------
+            // STEP 8: FIND INITIAL READING
+            // ------------------------------------------
+
+            const [initialReadings] =
+                await connection.execute(
+                    `SELECT reading_date, reading_value
+                     FROM meter_readings
+                     WHERE meter_serial = ?
+                       AND reading_type = 'INITIAL'
+                     LIMIT 1`,
+                    [normalizedSerial]
+                );
+
+            if (initialReadings.length === 0) {
+
+                await connection.rollback();
+
+                return res.status(400).json({
+                    message:
+                        "Register the INITIAL reading first"
+                });
+            }
+
+            // ------------------------------------------
+            // STEP 9: FIND LATEST MONTHLY READING
+            // ------------------------------------------
+
+            const [monthlyReadings] =
+                await connection.execute(
+                    `SELECT
+                        billing_month,
+                        reading_date,
+                        reading_value
+
+                     FROM meter_readings
+
+                     WHERE meter_serial = ?
+                       AND reading_type = 'MONTHLY'
+
+                     ORDER BY billing_month DESC
+
+                     LIMIT 1`,
+                    [normalizedSerial]
+                );
+
+            // ------------------------------------------
+            // STEP 10: ESTABLISH PREVIOUS READING
+            // ------------------------------------------
+
+            let previousReading = initialReadings[0];
+
+            if (monthlyReadings.length > 0) {
+
+                previousReading = monthlyReadings[0];
+
+                // Calculate the next expected
+                // billing month from the latest
+                // MONTHLY reading.
+
+                const [year, month] =
+                    previousReading.billing_month
+                        .split("-")
+                        .map(Number);
+
+                const nextMonth = new Date(
+                    Date.UTC(year, month, 1)
+                ).toISOString().slice(0, 10);
+
+                if (billing_month !== nextMonth) {
+
+                    await connection.rollback();
+
+                    return res.status(409).json({
+                        message:
+                            `Next billing month must be ${nextMonth}`
+                    });
+                }
+
+            } else {
+
+                // First MONTHLY reading:
+                //
+                // ADMIN chooses the first billing
+                // period, subject to validation.
+                //
+                // It cannot precede installation
+                // or fall after the reading month.
+
+                const firstAllowedMonth =
+                    previousReading.reading_date
+                        .slice(0, 7) + "-01";
+
+                const latestAllowedMonth =
+                    reading_date.slice(0, 7) + "-01";
+
+                if (
+                    billing_month < firstAllowedMonth ||
+                    billing_month > latestAllowedMonth
+                ) {
+
+                    await connection.rollback();
+
+                    return res.status(400).json({
+                        message:
+                            "First billing month is outside the permitted reading period"
+                    });
+                }
+            }
+
+            // ------------------------------------------
+            // STEP 11: VALIDATE CHRONOLOGICAL ORDER
+            // ------------------------------------------
+
+            if (
+                reading_date <= previousReading.reading_date
+            ) {
+
+                await connection.rollback();
+
+                return res.status(409).json({
+                    message:
+                        "Reading date must follow the previous reading date"
+                });
+            }
+
+            // ------------------------------------------
+            // STEP 12: PREVENT DECREASING READINGS
+            // ------------------------------------------
+
+            if (
+                reading_value < previousReading.reading_value
+            ) {
+
+                await connection.rollback();
+
+                return res.status(409).json({
+                    message:
+                        "Monthly reading cannot be lower than the previous reading"
+                });
+            }
+
+            // ------------------------------------------
+            // STEP 13: INSERT MONTHLY READING
+            // ------------------------------------------
+            //
+            // MySQL also enforces uniqueness through
+            // uq_meter_month_type.
+            // ------------------------------------------
+
+            const [result] = await connection.execute(
+                `INSERT INTO meter_readings
+                (
+                    meter_serial,
+                    billing_month,
+                    reading_date,
+                    reading_type,
+                    reading_value
+                )
+                VALUES (?, ?, ?, 'MONTHLY', ?)`,
+                [
+                    normalizedSerial,
+                    billing_month,
+                    reading_date,
+                    reading_value
+                ]
+            );
+
+            // ------------------------------------------
+            // STEP 14: COMMIT TRANSACTION
+            // ------------------------------------------
+
+            await connection.commit();
+
+            return res.status(201).json({
+
+                message:
+                    "Monthly meter reading registered successfully",
+
+                reading: {
+
+                    reading_id: result.insertId,
+
+                    meter_serial: normalizedSerial,
+
+                    billing_month,
+
+                    reading_date,
+
+                    reading_type: "MONTHLY",
+
+                    reading_value,
+
+                    previous_reading:
+                        previousReading.reading_value,
+
+                    consumption_m3:
+                        reading_value -
+                        previousReading.reading_value
+                }
+            });
+
+        } catch (error) {
+
+            // ------------------------------------------
+            // ROLLBACK FAILED TRANSACTIONS
+            // ------------------------------------------
+
+            if (connection) {
+
+                try {
+                    await connection.rollback();
+                } catch (rollbackError) {
+                    console.error(
+                        "Monthly rollback error:",
+                        rollbackError.message
+                    );
+                }
+            }
+
+            // Handle MySQL duplicate constraints.
+
+            if (error.code === "ER_DUP_ENTRY") {
+
+                return res.status(409).json({
+                    message:
+                        "A reading already exists for this billing month"
+                });
+            }
+
+            console.error(
+                "Monthly reading error:",
+                error.code || error.message
+            );
+
+            return res.status(500).json({
+                message:
+                    "An internal server error occurred"
+            });
+
+        } finally {
+
+            // Always release the connection.
+
+            if (connection) {
+                connection.release();
+            }
+        }
+    }
+);
+
+// ==================================================
 // EXPORT ROUTER
 // ==================================================
 

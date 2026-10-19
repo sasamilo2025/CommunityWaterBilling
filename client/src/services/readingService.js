@@ -75,3 +75,80 @@ export async function getReadings(token) {
     // Return the complete response.
     return data;
 }
+
+// ==================================================
+// REGISTER INITIAL METER READING
+// ==================================================
+//
+// ADMIN only.
+//
+// Saves the opening reading when a meter is installed.
+// INITIAL readings do not generate invoices.
+// ==================================================
+
+export async function registerInitialReading(token, reading) {
+
+    const response = await fetch(`${API_URL}/initial`, {
+
+        method: "POST",
+
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+        },
+
+        body: JSON.stringify(reading)
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        throw new Error(
+            data.message || "Unable to register initial reading."
+        );
+    }
+
+    return data;
+}
+
+
+// ==================================================
+// REGISTER MONTHLY METER READING
+// ==================================================
+//
+// ADMIN only.
+//
+// Saves an actual meter reading against an
+// explicitly confirmed billing month.
+//
+// The backend independently validates:
+// - Reading dates.
+// - Reading values.
+// - Billing-month sequence.
+// - ADMIN confirmation.
+// ==================================================
+
+export async function registerMonthlyReading(token, reading) {
+
+    const response = await fetch(`${API_URL}/monthly`, {
+
+        method: "POST",
+
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+        },
+
+        body: JSON.stringify(reading)
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        throw new Error(
+            data.message || "Unable to register monthly reading."
+        );
+    }
+
+    return data;
+}
