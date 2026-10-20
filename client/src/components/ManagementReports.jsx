@@ -496,65 +496,134 @@ export default function ManagementReports({ token }) {
 
                             </div>
 
-                            {customers.map((customer) => (
+                            {/* ==============================================
+                                VERTICAL GROUPED BAR CHART
+                                ============================================== */}
+
+                            <div className="table-responsive">
 
                                 <div
-                                    key={customer.customer_no}
-                                    className="border rounded p-3 mb-3"
+                                    className="d-flex align-items-end gap-3 border-bottom pb-2"
+                                    style={{
+                                        minWidth: "720px",
+                                        height: "320px"
+                                    }}
                                 >
 
-                                    <strong>
-                                        {customer.customer_name}
-                                    </strong>
+                                    {customers.map((customer) => (
 
-                                    <div className="mt-2">
+                                        <div
+                                            key={customer.customer_no}
+                                            className="d-flex flex-column align-items-center"
+                                            style={{
+                                                flex: "1 0 100px",
+                                                minWidth: "100px"
+                                            }}
+                                        >
 
-                                        {MONTHS.map((month, index) => {
+                                            {/* Three vertical bars for each customer */}
 
-                                            const data =
-                                                customer.months[month.key] || {
-                                                    consumption: 0,
-                                                    cost: 0
-                                                };
+                                            <div
+                                                className="d-flex justify-content-center align-items-end gap-1 w-100"
+                                                style={{ height: "265px" }}
+                                            >
 
-                                            const value =
-                                                graphMetric === "consumption"
-                                                    ? data.consumption
-                                                    : data.cost;
+                                                {MONTHS.map((month, index) => {
 
-                                            const colors = [
-                                                "bg-primary",
-                                                "bg-success",
-                                                "bg-warning"
-                                            ];
+                                                    const values =
+                                                        customer.months[month.key] || {
+                                                            consumption: 0,
+                                                            cost: 0
+                                                        };
 
-                                            return (
+                                                    const value =
+                                                        graphMetric === "consumption"
+                                                            ? values.consumption
+                                                            : values.cost;
 
-                                                <div
-                                                    key={month.key}
-                                                    className="mb-2"
-                                                >
+                                                    const barHeight =
+                                                        maxGraphValue > 0
+                                                            ? (value / maxGraphValue) * 215
+                                                            : 0;
 
-                                                    <small>
-                                                        {month.label}
-                                                    </small>
+                                                    const colors = [
+                                                        "bg-primary",
+                                                        "bg-success",
+                                                        "bg-warning"
+                                                    ];
 
-                                                    <ConsumptionBar
-                                                        value={value}
-                                                        maxValue={maxGraphValue}
-                                                        color={colors[index]}
-                                                    />
+                                                    return (
 
-                                                </div>
+                                                        <div
+                                                            key={month.key}
+                                                            className="d-flex flex-column align-items-center justify-content-end"
+                                                            style={{
+                                                                width: "30px",
+                                                                height: "100%"
+                                                            }}
+                                                            title={`${customer.customer_name} — ${month.label}: ${
+                                                                graphMetric === "consumption"
+                                                                    ? `${value} m³`
+                                                                    : `$${money(value)}`
+                                                            }`}
+                                                        >
 
-                                            );
-                                        })}
+                                                            {/* Value above the column */}
 
-                                    </div>
+                                                            <small
+                                                                className="fw-bold"
+                                                                style={{ fontSize: "10px" }}
+                                                            >
+                                                                {graphMetric === "consumption"
+                                                                    ? value
+                                                                    : money(value)}
+                                                            </small>
+
+                                                            {/* Vertical column */}
+
+                                                            <div
+                                                                className={`${colors[index]} rounded-top`}
+                                                                style={{
+                                                                    width: "25px",
+                                                                    height: `${barHeight}px`,
+                                                                    minHeight: value > 0 ? "2px" : "0"
+                                                                }}
+                                                            />
+
+                                                        </div>
+
+                                                    );
+                                                })}
+
+                                            </div>
+
+                                            {/* Customer label below the columns */}
+
+                                            <div
+                                                className="text-center mt-2"
+                                                style={{
+                                                    fontSize: "12px",
+                                                    minHeight: "42px"
+                                                }}
+                                            >
+
+                                                <strong>
+                                                    {customer.customer_no}
+                                                </strong>
+
+                                                <br />
+
+                                                {customer.customer_name}
+
+                                            </div>
+
+                                        </div>
+
+                                    ))}
 
                                 </div>
 
-                            ))}
+                            </div>
 
                         </div>
 
