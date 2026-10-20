@@ -70,6 +70,22 @@ import ReadingForm from "./components/ReadingForm";
 import BillForm from "./components/BillForm";
 import BillList from "./components/BillList";
 
+// ==================================================
+// CUSTOMER PAYMENT COMPONENTS
+// ==================================================
+// ADMIN registers customer payments.
+// ADMIN and MANAGER can view payment history.
+
+import PaymentForm from "./components/PaymentForm";
+import PaymentList from "./components/PaymentList";
+
+// ==================================================
+// MANAGEMENT REPORTS
+// ==================================================
+// ADMIN and MANAGER can view consumption and charges.
+
+import ManagementReports from "./components/ManagementReports";
+
 // --------------------------------------------------
 // ROLE-BASED DASHBOARD NAVIGATION
 // --------------------------------------------------
@@ -153,6 +169,14 @@ function App() {
 
     // Reload invoice history after an invoice is saved.
     const [billsRefreshKey, setBillsRefreshKey] = useState(0);
+
+    // ==================================================
+    // PAYMENT HISTORY REFRESH CONTROL
+    // ==================================================
+    // Increment after a successful payment registration.
+    // This refreshes PaymentList automatically.
+
+    const [paymentsRefreshKey, setPaymentsRefreshKey] = useState(0);
 
     // --------------------------------------------------
     // HANDLE SUCCESSFUL LOGIN
@@ -519,8 +543,21 @@ function App() {
                             (user.role === "ADMIN" ||
                             user.role === "MANAGER") &&
                             activeMenu === "bills"
-                        ) && (
+                        ) &&
 
+                        // Payments is implemented for ADMIN/MANAGER.
+                        !(
+                            (user.role === "ADMIN" ||
+                            user.role === "MANAGER") &&
+                            activeMenu === "payments"
+                        ) &&
+
+                        // Reports is implemented for ADMIN/MANAGER.
+                        !(
+                            (user.role === "ADMIN" ||
+                            user.role === "MANAGER") &&
+                            activeMenu === "reports"
+                        ) && (
                             <FeaturePlaceholder activeMenu={activeMenu} />
 
                         )
@@ -636,11 +673,68 @@ function App() {
                         </div>
                     )
                 }
+                                {/* ==================================================
+                                    PAYMENTS REGISTRATION AND HISTORY
+                                ================================================== */}
+
+                                {(user.role === "ADMIN" ||
+                                user.role === "MANAGER") &&
+
+                                    activeMenu === "payments" && (
+
+                                        <div>
+
+                                            {/* ADMIN can register customer payments. */}
+                                            {user.role === "ADMIN" && (
+
+                                                <PaymentForm
+                                                    token={token}
+                                                    onPaymentSaved={() => {
+
+                                                        // Refresh payment history.
+                                                        setPaymentsRefreshKey(
+                                                            key => key + 1
+                                                        );
+
+                                                        // Refresh invoice history so
+                                                        // updated payment statuses appear.
+                                                        setBillsRefreshKey(
+                                                            key => key + 1
+                                                        );
+                                                    }}
+                                                />
+
+                                            )}
+
+                                            {/* ADMIN and MANAGER can view payments. */}
+                                            <PaymentList
+                                                token={token}
+                                                refreshKey={paymentsRefreshKey}
+                                            />
+
+                                        </div>
+                                    )
+                                }
+                {/* ==================================================
+                    MANAGEMENT REPORTS
+                    ADMIN and MANAGER: Read-only reports
+                ================================================== */}
+
+                {(user.role === "ADMIN" ||
+                  user.role === "MANAGER") &&
+
+                    activeMenu === "reports" && (
+
+                        <ManagementReports token={token} />
+
+                    )
+                }
                 </section>
 
             </div>
 
         </main>
+
     );
 }
 

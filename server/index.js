@@ -67,6 +67,12 @@ const metersRoutes = require("./routes/metersRoutes");
 // Import protected customer invoice routes.
 const billsRoutes = require("./routes/billsRoutes");
 
+// Import customer payment management routes.
+const paymentsRoutes = require("./routes/paymentsRoutes");
+
+// Import read-only management reporting endpoints.
+const reportsRoutes = require("./routes/reportsRoutes");
+
 // --------------------------------------------------
 // IMPORT METER READINGS ROUTES
 // --------------------------------------------------
@@ -171,6 +177,12 @@ app.use("/api/readings", readingsRoutes);
 
 // Register customer invoice endpoints.
 app.use("/api/bills", billsRoutes);
+
+// Register payment history and registration endpoints.
+app.use("/api/payments", paymentsRoutes);
+
+// Register management reports.
+app.use("/api/reports", reportsRoutes);
 
 // --------------------------------------------------
 // STEP 5: CREATE OUR FIRST API ENDPOINT

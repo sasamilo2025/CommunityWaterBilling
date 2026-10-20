@@ -28,3 +28,11 @@ Thumbs.db
 
 # Local editor settings
 .vscode/
+# ==========================================
+# PRIVATE MYSQL DATABASE BACKUPS
+# ==========================================
+# Database exports may contain customer data,
+# authentication hashes and financial records.
+# Never upload these backups to GitHub.
+
+database/backups/
